@@ -1,0 +1,4 @@
+﻿  Main.cpp
+C:\Users\tommy\Desktop\Software Apps\generatorID\Main.cpp(128,27): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\tommy\Desktop\Software Apps\generatorID\Main.cpp(131,23): warning C4018: '<': signed/unsigned mismatch
+  generatorID.vcxproj -> C:\Users\tommy\Desktop\Software Apps\generatorID\x64\Debug\generatorID.exe
