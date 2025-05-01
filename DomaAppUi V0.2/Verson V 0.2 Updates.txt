@@ -1,0 +1,4 @@
+Updates:
+
+Doma V 0.2 now has a copy and highlightable text for the generated ID making it
+easier for the user to copy and paste the generated ID.
