@@ -1,0 +1,10 @@
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\glfw3.dll
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\freetype.dll
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\zlib1.dll
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\bz2.dll
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\libpng16.dll
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\brotlidec.dll
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\brotlicommon.dll
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\DomaAppl.4aaa2b33\x64\Release\DomaAppl.80F5B025.Up2Date
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\OPENGL32.dll
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\IMM32.dll
