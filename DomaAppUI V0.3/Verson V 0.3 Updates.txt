@@ -1,0 +1,4 @@
+Updates:
+
+Doma V 0.3 ID generater button and text box centered.
+Window and font of GUI scales based on users display resolution.
