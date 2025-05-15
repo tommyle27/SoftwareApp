@@ -5,33 +5,59 @@
 #include <iostream>
 #include <fstream>
 #include <windows.h> // For GetEnvironmentVariable
+#include <GLFW/glfw3.h>
 
 namespace fileDisplay {
     void fileUI() {
+        // Get the font holder from ImGui IO
+        ImGuiIO& io = ImGui::GetIO();
+        FontHolder* fonts = static_cast<FontHolder*>(io.UserData);
+
+
         // Get the main viewport primary monitor
         ImGuiViewport* viewport = ImGui::GetMainViewport();
 
+
+        // get main monitor res to scale ui using its dimensions
+        GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
+
+
         // Calculate scaling factor
-        float scale_factor = viewport->Size.y / 1080.0f;
+        float scale_factor = mode->width / 1080.0f;
         if (scale_factor < 0.8f) scale_factor = 0.8f;
         if (scale_factor > 2.0f) scale_factor = 2.0f;
 
-        // Calculate window size
-        ImVec2 windowSize(viewport->Size.x * 0.4f, viewport->Size.y * 0.8f);
+        ImFont* currentFont = fonts->Medium;
+        if (scale_factor > 1.5f) {
+            currentFont = fonts->Large;
+        }
+        else if (scale_factor < 1.0f) {
+            currentFont = fonts->Small;
+        }
 
-        // Calculate window position - place it at 50% of viewport width from the left
-        ImVec2 windowPos(viewport->Pos.x + viewport->Size.x * 0.5f, viewport->Pos.y + (viewport->Size.y - windowSize.y) * 0.5f);
+        // Calculate window size (half of the viewport)
+        ImVec2 windowSize(viewport->Size.x * 0.5f, viewport->Size.y);
+
+        // Calculate window position - make it occupy the right half of the viewport
+        ImVec2 windowPos(viewport->Pos.x + viewport->Size.x * 0.5f, viewport->Pos.y);
 
         // Set window size and position
-        ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
         // Set window size and position
         ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
-        // Create file window display
-        ImGui::Begin("File");
+        // Add window flags to prevent user movement/resizing
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-        // Scale the font
-        ImGui::SetWindowFontScale(scale_factor);
+        // set font
+        ImGui::PushFont(currentFont);
+
+        // Create file window display
+        ImGui::Begin("File", nullptr, window_flags);
 
         // Get OneDrive path from environment variable
         char onedrivePath[MAX_PATH];
@@ -80,5 +106,6 @@ namespace fileDisplay {
         }
 
         ImGui::End();
+        ImGui::PopFont();
     }
 }

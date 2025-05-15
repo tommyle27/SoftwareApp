@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <algorithm> // For std::clamp
 #include <windows.h> // For GetEnvironmentVariable
+#include <GLFW/glfw3.h>
 
 
 #include "imgui.h"
@@ -55,35 +56,53 @@ namespace DomaApp {
 
 
     void RenderIdGeneratorUI() {
+        // Get the font holder from ImGui IO
+        ImGuiIO& io = ImGui::GetIO();
+        FontHolder* fonts = static_cast<FontHolder*>(io.UserData);
 
-        // get the main viewport primary monitor
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        // get monitor res to scale font/ui using its dimensions
+        GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
 
         // Calculate a scaling factor based on display height (you could use width instead)
         // We'll use 1080p as our reference resolution
         // Calculate scaling factor with manual clamping
-        float scale_factor = viewport->Size.y / 1080.0f;
+        float scale_factor = mode->width / 1080.0f;
         if (scale_factor < 0.8f) scale_factor = 0.8f;
         if (scale_factor > 2.0f) scale_factor = 2.0f;
 
 
-        // calculate new size of window (80% of display size)
-        ImVec2 windowSize(viewport->Size.x * 0.4f, viewport->Size.y * 0.8f);
+        ImFont* currentFont = fonts->Medium;
+        if (scale_factor > 1.5f) {
+            currentFont = fonts->Large;
+        }
+        else if (scale_factor < 1.0f) {
+            currentFont = fonts->Small;
+        }
 
-        // Calculate window position - place it at 10% of viewport width from the left
-        ImVec2 windowPos(viewport->Pos.x + viewport->Size.x * 0.1f, viewport->Pos.y + (viewport->Size.y - windowSize.y) * 0.5f);
+
+        // get the main viewport primary monitor
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+        // calculate new size of window (half of the viewport)
+        ImVec2 windowSize(viewport->Size.x * 0.5f, viewport->Size.y);
+        // Calculate window position - place it to the left half of the viewport
+        ImVec2 windowPos(viewport->Pos.x, viewport->Pos.y);
+
 
         // Set window size and position
-        ImGui::SetNextWindowPos(windowPos, ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always);
         // set the next window size and position
         ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
-        ImGui::Begin("GenerateID");
+        // Add window flags to prevent user movement/resizing
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-        // Scale the font
-        ImGui::SetWindowFontScale(scale_factor);
-
-
+        ImGui::PushFont(currentFont);
+        ImGui::Begin("GenerateID", nullptr, window_flags);
 
         // Get OneDrive path from environment variable
         char onedrivePath[MAX_PATH];
@@ -116,7 +135,7 @@ namespace DomaApp {
 
             // Calculate sizes dynamically
             float textWidth = ImGui::CalcTextSize("New ID: ").x;
-            float inputWidth = ImGui::GetWindowWidth() * 0.3f * scale_factor; // 30% of window width
+            float inputWidth = ImGui::GetWindowWidth() * 0.15f * scale_factor; // 15% of window width
             float totalWidth = textWidth + inputWidth + ImGui::GetStyle().ItemSpacing.x * scale_factor;
 
             // Center ID display
@@ -174,7 +193,7 @@ namespace DomaApp {
             // Center and scale button
             float buttonWidth = (ImGui::CalcTextSize("Save/Use ID").x + (ImGui::GetStyle().FramePadding.x * 2.0f * scale_factor)) * scale_factor;
 
-            ImGui::SetCursorPosX((ImGui::GetWindowWidth() - buttonWidth) * 0.5f);
+            ImGui::SetCursorPosX((ImGui::GetWindowWidth() - buttonWidth) * 0.6f);
             if (ImGui::Button("Save/Use ID")) {
                 std::ofstream writeToFile(filePath, std::ios::app);
                 if (writeToFile.is_open()) {
@@ -189,6 +208,7 @@ namespace DomaApp {
         }
 
         ImGui::End();
+        ImGui::PopFont();
     }
 
 

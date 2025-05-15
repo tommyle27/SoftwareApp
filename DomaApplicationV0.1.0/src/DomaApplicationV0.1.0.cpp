@@ -1,6 +1,6 @@
 #include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <stdio.h>
 
 #define GL_SILENCE_DEPRECATION
@@ -17,25 +17,17 @@
 #include <iostream>
 #include <vector>
 
-struct GLVersion {
-    int major;
-    int minor;
-    const char* glsl_version;
-    bool try_compat;
-    bool try_forward_compat;
-};
-
-static bool is_context_valid() {
-    // Check if we have a valid OpenGL context by querying a simple value
-    return glGetString(GL_VERSION) != nullptr;
-}
-
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
 // Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
+
+static bool is_context_valid() {
+    // Check if we have a valid OpenGL context by querying a simple value
+    return glGetString(GL_VERSION) != nullptr;
+}
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -46,158 +38,114 @@ static void glfw_error_callback(int error, const char* description)
 int main(int, char**)
 {
     glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit())
-        return 1;
 
-    // Define version fallback chain
-    std::vector<GLVersion> versions_to_try = {
-        {3, 3, "#version 330", false, true},  // Core profile
-        {3, 2, "#version 150", false, true},
-        {3, 1, "#version 140", true, false},  // Compatibility profile
-        {3, 0, "#version 130", true, false},
-        {2, 1, "#version 120", true, false},
-        {2, 0, "#version 110", true, false}
-    };
+    // ===== 1. FIRST TRY ANGLE (D3D11 BACKEND) =====
+    glfwInitHint(GLFW_ANGLE_PLATFORM_TYPE, GLFW_ANGLE_PLATFORM_TYPE_D3D11);
+    if (!glfwInit()) {
+        std::cerr << "Failed to initialize GLFW with ANGLE (D3D11). Falling back to default.\n";
+        glfwInitHint(GLFW_ANGLE_PLATFORM_TYPE, GLFW_ANGLE_PLATFORM_TYPE_NONE);
+        if (!glfwInit()) {
+            std::cerr << "FATAL: GLFW initialization failed completely.\n";
+            return 1;
+        }
+    }
 
+    // ===== 2. GET MONITOR DIMENSIONS =====
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
+    // make window 80% size of primary monitor
+    int windowWidth = static_cast<int>(mode->width * 0.8);
+    int windowHeight = static_cast<int>(mode->height * 0.8);
+
+    // ===== 3. TRY DIFFERENT CONTEXT CREATION METHODS =====
     GLFWwindow* window = nullptr;
     const char* glsl_version = nullptr;
 
-    // Get the primary monitor
-    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
-
-    /*
-    // Decide GL+GLSL versions
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-    // GL ES 2.0 + GLSL 100 (WebGL 1.0)
-    const char* glsl_version = "#version 100";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-#elif defined(IMGUI_IMPL_OPENGL_ES3)
-    // GL ES 3.0 + GLSL 300 es (WebGL 2.0)
-    const char* glsl_version = "#version 300 es";
+    // Attempt 1: ANGLE (D3D11)
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_ANGLE_PLATFORM_TYPE_D3D11);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-#elif defined(__APPLE__)
-    // GL 3.2 + GLSL 150
-    const char* glsl_version = "#version 150";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
-#else
-    // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
-#endif
-    */
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    window = glfwCreateWindow(windowWidth, windowHeight, "Doma ID Generator", nullptr, nullptr);
 
-    // Try creating context with different versions
-    for (const auto& version : versions_to_try) {
-        glfwDefaultWindowHints();
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // Test with invisible window first
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version.major);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version.minor);
-
-        if (!version.try_compat) {
-            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        }
-
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, version.try_forward_compat ? GL_TRUE : GL_FALSE);
-
-        window = glfwCreateWindow(1, 1, "Context Test", nullptr, nullptr);
-        if (window) {
-            glfwMakeContextCurrent(window);
-
-            // Verify the context is actually valid
-            if (is_context_valid()) {
-                // Success! Now create the real window
-                glfwDestroyWindow(window);
-
-                // Recreate with proper settings
-                glfwDefaultWindowHints();
-                glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version.major);
-                glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version.minor);
-
-                if (!version.try_compat) {
-                    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-                }
-
-                glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, version.try_forward_compat ? GL_TRUE : GL_FALSE);
-
-                // Get monitor for centering
-                GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
-                const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
-                window = glfwCreateWindow(
-                    static_cast<int>(mode->width * 0.8),
-                    static_cast<int>(mode->height * 0.8),
-                    "Doma ID Generator",
-                    nullptr, nullptr);
-
-                if (window) {
-                    glfwMakeContextCurrent(window);
-                    if (is_context_valid()) {
-                        glsl_version = version.glsl_version;
-                        std::cout << "Success with OpenGL " << version.major << "." << version.minor
-                            << " (" << (version.try_compat ? "compatibility" : "core")
-                            << " profile)\n";
-                        break;
-                    }
-                }
-            }
-            if (window) {
-                glfwDestroyWindow(window);
-                window = nullptr;
-            }
-        }
-    }
-    
-    // Final fallback - no version hints
     if (!window) {
+        std::cerr << "ANGLE (D3D11) failed. Trying OpenGL ES...\n";
+        // Attempt 2: OpenGL ES
         glfwDefaultWindowHints();
-        window = glfwCreateWindow(mode->width * 0.8, mode->height * 0.8, "Doma ID Generator Version 0.1.0", nullptr, nullptr);
-        if (window) {
-            glfwMakeContextCurrent(window);
-            if (is_context_valid()) {
-                const char* version = (const char*)glGetString(GL_VERSION);
-                if (version) {
-                    std::cout << "Using default OpenGL context: " << version << "\n";
-                    if (strstr(version, "OpenGL ES")) {
-                        glsl_version = "#version 300 es";
-                    }
-                    else if (atof(version) >= 3.3) {
-                        glsl_version = "#version 330";
-                    }
-                    else if (atof(version) >= 3.0) {
-                        glsl_version = "#version 130";
-                    }
-                    else {
-                        glsl_version = "#version 120";
-                    }
-                }
-            }
-            else {
-                glfwDestroyWindow(window);
-                window = nullptr;
-            }
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        window = glfwCreateWindow(windowWidth, windowHeight, "Doma ID Generator", nullptr, nullptr);
+    }
+
+    if (!window) {
+        std::cerr << "OpenGL ES failed. Trying standard OpenGL...\n";
+        // Attempt 3: Standard OpenGL (Core + Compatibility)
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        window = glfwCreateWindow(windowWidth, windowHeight, "Doma ID Generator", nullptr, nullptr);
+
+        if (!window) {
+            // ==== TRY OPENGL ES 2.0 (BEST FOR SURFACE INTEL GPUs) ====
+            // Attempt 4:
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+            window = glfwCreateWindow(windowWidth, windowHeight, "Doma ID Generator", nullptr, nullptr);
+        }
+
+        if (!window) {
+            // Attempt 5: Standard OpenGL 2.1
+            std::cerr << "OpenGL ES 2.0 failed. Trying OpenGL 2.1...\n";
+            glfwDefaultWindowHints();
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+            window = glfwCreateWindow(windowWidth, windowHeight, "Doma ID Generator", nullptr, nullptr);
+        }
+
+        if (!window) {
+            // Last attempt: No version hints (let GLFW decide)
+            glfwDefaultWindowHints();
+            window = glfwCreateWindow(windowWidth, windowHeight, "Doma ID Generator", nullptr, nullptr);
         }
     }
 
     if (!window) {
-        std::cerr << "Failed to create OpenGL context\n";
+        const char* description;
+        int code = glfwGetError(&description);
+        std::cerr << "FATAL: Failed to create GLFW window. Error " << code << ": " << description << "\n";
         glfwTerminate();
         return 1;
     }
 
-
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
+    // ===== 4. DETECT ACTUAL GL VERSION =====
+    const char* gl_version = (const char*)glGetString(GL_VERSION);
+    if (gl_version) {
+        std::cout << "Running with: " << gl_version << "\n";
+        if (strstr(gl_version, "OpenGL ES")) {
+            glsl_version = "#version 300 es";
+        }
+        else if (strstr(gl_version, "3.3") || strstr(gl_version, "3.2")) {
+            glsl_version = "#version 330";
+        }
+        else if (strstr(gl_version, "3.1") || strstr(gl_version, "3.0")) {
+            glsl_version = "#version 130";
+        }
+        else {
+            glsl_version = "#version 120";
+        }
+    }
+    else {
+        std::cerr << "WARNING: Could not detect OpenGL version. Using fallback GLSL.\n";
+        glsl_version = "#version 120";
+    }
+
+    // ===== 5. CENTER WINDOW =====
     // Center the window if not fullscreen
     if (primaryMonitor && window) {
         int monitorX, monitorY;
@@ -211,16 +159,32 @@ int main(int, char**)
             monitorY + (mode->height - windowHeight) / 2);
     }
 
+    
+    // ===== 6. SETUP IMGUI =====
+    // use this number to scale the base value of the font sizes
+    float fontScale = mode->width / 1440.0f;
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
-    io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 18.0f);
-    
+    //io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // DockingEnable
+    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;  // ViewportsEnable
+    ImFont* font_small = io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 8.0f * fontScale);
+    ImFont* font_medium = io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 12.0f * fontScale);
+    ImFont* font_large = io.Fonts->AddFontFromFileTTF("fonts/DroidSans.ttf", 18.0f * fontScale);
 
+    static struct FontHolder {
+        ImFont* small;
+        ImFont* medium;
+        ImFont* large;
+    } fonts;
+
+    fonts.small = font_small;
+    fonts.medium = font_medium;
+    fonts.large = font_large;
+    io.UserData = &fonts;
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -241,6 +205,10 @@ int main(int, char**)
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     ImVec4 clear_color = ImVec4(0.1f, 0.1f, 0.1f, 1.00f);
+
+
+
+    // ===== 7. MAIN LOOP =====
 
     while (!glfwWindowShouldClose(window))
     {
@@ -275,17 +243,7 @@ int main(int, char**)
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        // Update and Render additional Platform Windows
-        // (Platform functions may change the current OpenGL context, so we save/restore it to make it easier to paste this code elsewhere.
-        //  For this specific demo app we could also call glfwMakeContextCurrent(window) directly)
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            GLFWwindow* backup_current_context = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
-        }
-
+       glfwMakeContextCurrent(window);
         glfwSwapBuffers(window);
     }
 #ifdef __EMSCRIPTEN__
