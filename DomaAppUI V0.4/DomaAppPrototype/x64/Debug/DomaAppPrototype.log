@@ -1,0 +1,18 @@
+﻿  imgui_impl_glfw.cpp
+  imgui_impl_opengl3.cpp
+  imgui.cpp
+  imgui_demo.cpp
+  imgui_draw.cpp
+  imgui_tables.cpp
+  imgui_widgets.cpp
+  fileDisplay.cpp
+  IdGenerator.cpp
+C:\Users\tommy\Desktop\Software Apps\DomaAppUI V0.4\src\IdGenerator.cpp(50,38): warning C4101: 'e': unreferenced local variable
+  Main.cpp
+C:\Users\tommy\Desktop\Software Apps\DomaAppUI V0.4\src\Main.cpp(81,75): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+C:\Users\tommy\Desktop\Software Apps\DomaAppUI V0.4\src\Main.cpp(81,55): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+  Generating Code...
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  DomaAppPrototype.vcxproj -> C:\Users\tommy\Desktop\Software Apps\DomaAppUI V0.4\x64\Debug\DomaAppPrototype.exe
+  'pwsh.exe' is not recognized as an internal or external command,
+  operable program or batch file.

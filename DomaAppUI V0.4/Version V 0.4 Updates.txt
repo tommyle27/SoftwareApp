@@ -1,0 +1,7 @@
+Updates:
+
+Doma V 0.4 is able to open the users files in their oneDrive.
+
+However the app looks for a specific file path in which the file is expected to be located.
+This file path must be rooted to the original file that has been shared to employees within 
+the Doma company oneDrive atmosphere.

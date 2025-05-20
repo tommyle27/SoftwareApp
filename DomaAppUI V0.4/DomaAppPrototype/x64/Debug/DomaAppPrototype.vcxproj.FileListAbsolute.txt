@@ -1,0 +1,2 @@
+C:\Users\tommy\Desktop\Software Apps\DomaAppUI V0.4\x64\Debug\glfw3.dll
+C:\Users\tommy\Desktop\Software Apps\DomaAppUI V0.4\DomaAppPrototype\x64\Debug\DomaAppP.D9FC165C.Up2Date
