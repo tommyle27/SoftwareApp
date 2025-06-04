@@ -1,0 +1,11 @@
+﻿  DomaApplicationV0.1.0.cpp
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\src\DomaApplicationV0.1.0.cpp(45,75): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\src\DomaApplicationV0.1.0.cpp(45,55): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+  Generating code
+  1 of 385 functions ( 0.3%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  DomaApplicationV0.1.0.vcxproj -> C:\Users\tommy\Desktop\Software Apps\DomaApplication\DomaApplicationV0.1.0\x64\Release\DomaApplicationV0.1.0.exe
+  'pwsh.exe' is not recognized as an internal or external command,
+  operable program or batch file.
